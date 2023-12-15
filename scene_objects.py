@@ -41,10 +41,10 @@ class Field:
         return sum(map(lambda obj: obj.q, roy))
 
     
-    def draw(self, screen:pygame.display):
+    def draw(self, screen:pygame.display, force_line: bool = True):
         for obj in self.objects:
             if obj.m < 10:
-                obj.draw(screen, force_line=True)
+                obj.draw(screen, force_line=force_line)
             else:
                 obj.draw(screen, force_line=False)
 
@@ -74,10 +74,16 @@ class Object:
         self.width = width
         self.color = color
     
+    def _approve_force(self, obj: 'Object') -> bool:
+        rad_vector = self.pos - obj.pos
+        return np.linalg.norm(rad_vector) < self.r + obj.r
+        
 
     def _force_from_others(self):
         force = np.zeros((2,))
         for obj in self.field.get_others(self):
+            if self._approve_force(obj):
+                continue
             rad_vector = obj.pos - self.pos
             f = abs(self.q * obj.q) / np.linalg.norm(rad_vector) ** 2
 
@@ -90,6 +96,7 @@ class Object:
 
 
     def _force_from_roy(self, q_k:float):
+
         roy_q = self.field.get_roy_q() * q_k
         roy_centre = self.field.get_roy_centre()
         
@@ -112,11 +119,11 @@ class Object:
         
         acceleration = force / self.m
         self.f = force # just for make possible to draw force line at any time
-        self.v += acceleration * dt
-        
-        for obj in self.field.get_others(self):
-            if np.linalg.norm((self.pos+self.v*dt)-obj.pos) < self.r + obj.r:
-                self.v = np.zeros_like(self.v)
+        #self.v += acceleration * dt
+        self.v = force * dt
+        # for obj in self.field.get_others(self):
+        #     if np.linalg.norm((self.pos+self.v*dt)-obj.pos) < self.r + obj.r:
+        #         self.v = np.zeros_like(self.v)
         self.pos += self.v * dt
         
 
